@@ -4,11 +4,17 @@ import { ControlPanel } from './components/ControlPanel';
 import { StringSettingsPanel } from './components/StringSettingsPanel';
 import { FretConstructorPanel } from './components/FretConstructorPanel';
 import { OscSettingsPanel } from './components/OscSettingsPanel';
-import { initialFretboardState, createFretboardState, ET12_DEGREES_GUITAR, ET12_DEGREES_VIOLA, ET12_DEGREES_VIOLIN, ET12_DEGREES_CELLO, ET12_DEGREES_BASS } from './core/models/FretboardState';
+import { createFretboardState, ET12_DEGREES_GUITAR, ET12_DEGREES_VIOLA, ET12_DEGREES_VIOLIN, ET12_DEGREES_CELLO, ET12_DEGREES_BASS } from './core/models/FretboardState';
 import type { FretboardState, GuitarString, ChordNote } from './core/models/FretboardState';
 import { oscService } from './core/osc/OscService';
 import { GUITAR_MODELS } from './core/models/GuitarModels';
 import { ET12, DAlessandro, HarryPartch } from './core/math/tunings';
+import { 
+  loadSavedFretboardState, 
+  saveFretboardState, 
+  loadSavedAppSettings, 
+  saveAppSettings 
+} from './core/storage/storage';
 import './index.css';
 
 
@@ -100,13 +106,34 @@ const PARTCH_FREQS_GUITAR: Record<number, { freq: number, degree: number }> = {
 };
 
 function App() {
-  const [fretboardState, setFretboardState] = useState<FretboardState>(initialFretboardState);
-  const [isFlipped, setIsFlipped] = useState(true); // Default to nut on left, high strings on top
-  const [useTrueTemperament, setUseTrueTemperament] = useState(false);
-  const [visualGuide, setVisualGuide] = useState<'JI' | 'Harmonics'>('JI');
-  const [clickMode, setClickMode] = useState<'play' | 'ghost' | 'chord'>('play');
+  const [savedSettings] = useState(() => loadSavedAppSettings());
+  const [fretboardState, setFretboardState] = useState<FretboardState>(() => loadSavedFretboardState());
+  const [isFlipped, setIsFlipped] = useState(savedSettings.isFlipped);
+  const [useTrueTemperament, setUseTrueTemperament] = useState(savedSettings.useTrueTemperament);
+  const [visualGuide, setVisualGuide] = useState<'JI' | 'Harmonics'>(savedSettings.visualGuide);
+  const [clickMode, setClickMode] = useState<'play' | 'ghost' | 'chord'>(savedSettings.clickMode);
   const [chordNotes, setChordNotes] = useState<ChordNote[]>([]);
   const [isShiftPressed, setIsShiftPressed] = useState(false);
+
+  // Sync state to LocalStorage
+  useEffect(() => {
+    saveFretboardState(fretboardState);
+  }, [fretboardState]);
+
+  useEffect(() => {
+    let currentTuningName: 'ET12' | 'DAlessandro' | 'HarryPartch' = 'ET12';
+    const firstTuning = fretboardState.strings[0]?.tuningSystem.name;
+    if (firstTuning === "D'Alessandro") currentTuningName = 'DAlessandro';
+    else if (firstTuning === "Harry Partch's 11-limit JI") currentTuningName = 'HarryPartch';
+
+    saveAppSettings({
+      isFlipped,
+      useTrueTemperament,
+      visualGuide,
+      clickMode,
+      currentTuningName
+    });
+  }, [isFlipped, useTrueTemperament, visualGuide, clickMode, fretboardState]);
 
   const playChord = useCallback(() => {
     if (chordNotes.length === 0) return;
