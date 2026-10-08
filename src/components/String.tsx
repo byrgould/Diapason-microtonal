@@ -55,7 +55,7 @@ export const String: React.FC<StringProps> = ({
       }
       return f.positionMm <= visibleLengthMm + 0.1;
     });
-  }, [stringData, visibleLengthMm, showTTDemo]);
+  }, [stringData, visibleLengthMm, showTTDemo, modelId]);
 
   // Just Intonation pure geometric markers (always use strict geometry)
   const jiMarkers = useMemo(() => {

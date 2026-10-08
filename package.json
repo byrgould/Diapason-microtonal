@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "lint": "eslint .",
+    "test": "vitest run",
+    "lint": "oxlint -c .oxlintrc.json .",
     "preview": "vite preview",
     "bridge": "node server/bridge.js"
   },
